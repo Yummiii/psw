@@ -4,6 +4,7 @@ use crate::{
 };
 use clap::Parser;
 use reqwest::Client;
+use sqlx::Acquire;
 use std::path::PathBuf;
 use tokio::{fs::File, io::AsyncReadExt};
 
@@ -14,12 +15,12 @@ pub struct AddArgs {
 }
 
 pub async fn run(args: AddArgs, mut conn: Conn) -> anyhow::Result<()> {
-    let mut repo = conn.wallpaper();
+    let mut tx = conn.begin().await?;
+    let mut repo = tx.wallpaper();
 
     if repo.key_exists(&args.key).await? {
-        return Err(anyhow::anyhow!(
-            "Key already exists. Please use a different key."
-        ));
+        println!("Overwriting existing key: {}", args.key);
+        repo.delete(&args.key).await?;
     }
 
     let img = if args.path.exists() {
@@ -44,6 +45,7 @@ pub async fn run(args: AddArgs, mut conn: Conn) -> anyhow::Result<()> {
         .expect("Failed to get file extension");
 
     repo.create(&Wallpaper::new(img, ext, args.key)).await?;
+    tx.commit().await?;
 
     Ok(())
 }
