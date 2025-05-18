@@ -1,35 +1,38 @@
-use std::path::PathBuf;
-
 use arguments::{Cli, Commands};
 use clap::Parser;
-use commands::{add, daemon, del, set};
+use commands::{add, del, set};
 use database::init_db;
 use dirs::config_dir;
+use std::{path::PathBuf, sync::LazyLock};
 use tokio::fs::create_dir_all;
 
 mod arguments;
 mod commands;
 mod database;
-mod dbus;
+mod hyprpaper;
+mod wallpaper;
+
+static PSW_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
+    if cfg!(debug_assertions) {
+        PathBuf::from("./")
+    } else {
+        config_dir().unwrap()
+    }
+    .join("psw")
+});
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let args = Cli::parse();
 
-    let cfg_dir = if cfg!(debug_assertions) {
-        PathBuf::from("./")
-    } else {
-        PathBuf::from(config_dir().unwrap())
-    }
-    .join("psw");
-    create_dir_all(&cfg_dir).await?;
+    create_dir_all(&*PSW_PATH).await?;
 
-    let pool = init_db(cfg_dir.join("wallpapers.db").display().to_string()).await;
+    let pool = init_db().await;
+    let conn = pool.acquire().await?;
 
     match args.command {
-        Commands::Add(args) => add::run(args, pool).await,
-        Commands::Set(args) => set::run(args, pool, cfg_dir).await,
-        Commands::Del(args) => del::run(args, pool).await,
-        Commands::Daemon => daemon::run(pool, cfg_dir).await,
+        Commands::Add(args) => add::run(args, conn).await,
+        Commands::Set(args) => set::run(args, conn).await,
+        Commands::Del(args) => del::run(args, conn).await,
     }
 }

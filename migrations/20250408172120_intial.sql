@@ -1,8 +1,6 @@
--- Add migration script here
 create table wallpapers (
     id integer primary key autoincrement,
-    "key" varchar(255) not null,
-    name varchar(255) not null,
+    "key" varchar(255) not null unique,
     data longblob not null,
-    current boolean not null default false
+    name varchar(255) not null
 );

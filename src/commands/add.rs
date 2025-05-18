@@ -1,7 +1,9 @@
-use crate::database::AppPool;
+use crate::{
+    database::{Conn, Repos},
+    wallpaper::Wallpaper,
+};
 use clap::Parser;
 use reqwest::Client;
-use sqlx::query;
 use std::path::PathBuf;
 use tokio::{fs::File, io::AsyncReadExt};
 
@@ -11,7 +13,15 @@ pub struct AddArgs {
     pub key: String,
 }
 
-pub async fn run(args: AddArgs, pool: AppPool) -> anyhow::Result<()> {
+pub async fn run(args: AddArgs, mut conn: Conn) -> anyhow::Result<()> {
+    let mut repo = conn.wallpaper();
+
+    if repo.key_exists(&args.key).await? {
+        return Err(anyhow::anyhow!(
+            "Key already exists. Please use a different key."
+        ));
+    }
+
     let img = if args.path.exists() {
         let mut buf = vec![];
         File::open(&args.path).await?.read_to_end(&mut buf).await?;
@@ -27,12 +37,13 @@ pub async fn run(args: AddArgs, pool: AppPool) -> anyhow::Result<()> {
             .to_vec()
     };
 
-    query("INSERT INTO wallpapers (key, name, data) VALUES (?, ? ,?)")
-        .bind(args.key)
-        .bind(args.path.file_name().unwrap().to_str().unwrap())
-        .bind(img)
-        .execute(&*pool)
-        .await?;
+    let ext = args
+        .path
+        .extension()
+        .and_then(|s| s.to_str())
+        .expect("Failed to get file extension");
+
+    repo.create(&Wallpaper::new(img, ext, args.key)).await?;
 
     Ok(())
 }

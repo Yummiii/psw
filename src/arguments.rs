@@ -13,5 +13,4 @@ pub enum Commands {
     Add(AddArgs),
     Set(SetArgs),
     Del(DelArgs),
-    Daemon,
 }
