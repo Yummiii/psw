@@ -28,7 +28,7 @@ pub async fn run(args: SetArgs, mut conn: Conn) -> anyhow::Result<()> {
     let path = (*PSW_PATH).join(wallpaper.name);
 
     let mut file = File::create(&path).await?;
-    file.write_all(&wallpaper.data).await?;
+    file.write_all(&wallpaper.data.unwrap()).await?;
 
     set_wallpaper(&path).await?;
     start().await?;

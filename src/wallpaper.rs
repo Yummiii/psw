@@ -1,9 +1,16 @@
 use sqlx::prelude::FromRow;
+use tabled::Tabled;
 
 #[derive(FromRow)]
 pub struct Wallpaper {
     pub name: String,
-    pub data: Vec<u8>,
+    pub data: Option<Vec<u8>>,
+    pub key: String,
+}
+
+#[derive(FromRow, Tabled)]
+pub struct WallpaperMeta {
+    pub name: String,
     pub key: String,
 }
 
@@ -12,7 +19,7 @@ impl Wallpaper {
         let hash = blake3::hash(&data);
         Wallpaper {
             name: format!("{}.{}", hash, ext),
-            data,
+            data: Some(data),
             key,
         }
     }

@@ -1,6 +1,5 @@
-use arguments::{Cli, Commands};
+use arguments::Cli;
 use clap::Parser;
-use commands::{add, del, set};
 use database::init_db;
 use dirs::config_dir;
 use std::{path::PathBuf, sync::LazyLock};
@@ -30,9 +29,5 @@ async fn main() -> anyhow::Result<()> {
     let pool = init_db().await;
     let conn = pool.acquire().await?;
 
-    match args.command {
-        Commands::Add(args) => add::run(args, conn).await,
-        Commands::Set(args) => set::run(args, conn).await,
-        Commands::Del(args) => del::run(args, conn).await,
-    }
+    args.command.run(conn).await
 }

@@ -20,3 +20,4 @@ lina-rs = { git = "https://github.com/Takasaki-Studio/lina-rs", features = [
     "sqlx",
 ], branch = "main" }
 indoc = "2.0.6"
+tabled = "0.20.0"

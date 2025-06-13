@@ -1,4 +1,4 @@
-use crate::wallpaper::Wallpaper;
+use crate::wallpaper::{Wallpaper, WallpaperMeta};
 use lina_rs::macros::repo;
 use sqlx::Sqlite;
 
@@ -37,5 +37,12 @@ impl WallpaperRepo {
             .execute(&mut *self.conn)
             .await?;
         Ok(())
+    }
+
+    pub async fn list(&mut self) -> anyhow::Result<Vec<WallpaperMeta>> {
+        let wallpapers = sqlx::query_as::<_, WallpaperMeta>("SELECT key, name FROM wallpapers")
+            .fetch_all(&mut *self.conn)
+            .await?;
+        Ok(wallpapers)
     }
 }
