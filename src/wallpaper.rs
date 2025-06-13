@@ -4,7 +4,7 @@ use tabled::Tabled;
 #[derive(FromRow)]
 pub struct Wallpaper {
     pub name: String,
-    pub data: Option<Vec<u8>>,
+    pub data: Vec<u8>,
     pub key: String,
 }
 
@@ -19,7 +19,7 @@ impl Wallpaper {
         let hash = blake3::hash(&data);
         Wallpaper {
             name: format!("{}.{}", hash, ext),
-            data: Some(data),
+            data,
             key,
         }
     }
